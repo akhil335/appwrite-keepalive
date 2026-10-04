@@ -34,3 +34,5 @@ jobs:
           APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
           APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
           APPWRITE_PROJECTS: ${{ secrets.APPWRITE_PROJECTS }}
+          APPWRITE_DATABASE_ID: ${{ secrets.APPWRITE_DATABASE_ID }}
+          APPWRITE_COLLECTION_ID: ${{ secrets.APPWRITE_COLLECTION_ID }}
