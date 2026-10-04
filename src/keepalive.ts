@@ -1,16 +1,62 @@
 import { Client, Databases, Permission, Role, ID } from "node-appwrite";
-import {
-  type KeepaliveResult,
-  type ProjectConfig,
-  type SiteKeepaliveResult,
+import type {
+  KeepaliveResult,
+  ProjectConfig,
+  SiteKeepaliveResult,
 } from "./types.js";
 
 /** User-Agent string sent on Site HTTP keepalive pings */
 const SITE_KEEPALIVE_USER_AGENT =
-  "appwrite-keepalive/1.1 (+https://github.com/OthmanAdi/appwrite-keepalive)";
+  "appwrite-keepalive/1.1 (+https://github.com)";
 
 /** Timeout (ms) for HTTP keepalive ping against a deployed Appwrite Site */
 const SITE_KEEPALIVE_TIMEOUT_MS = 15_000;
+
+/**
+ * Loads project configurations from environment variables.
+ * Explores single project variables or fallback multi-project array string.
+ */
+export function loadProjectsFromEnv(): ProjectConfig[] {
+  const projects: ProjectConfig[] = [];
+
+  // 1. Check for multiple projects config string
+  if (process.env.APPWRITE_PROJECTS) {
+    try {
+      const parsed = JSON.parse(process.env.APPWRITE_PROJECTS);
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          if (item.projectId && item.apiKey) {
+            projects.push({
+              endpoint: item.endpoint || "https://appwrite.io",
+              projectId: item.projectId,
+              apiKey: item.apiKey,
+              name: item.name,
+              siteUrls: item.siteUrls,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse APPWRITE_PROJECTS JSON:", e);
+    }
+  }
+
+  // 2. Fall back to single project variables if present
+  if (process.env.APPWRITE_PROJECT_ID && process.env.APPWRITE_API_KEY) {
+    // Only push if it wasn't already loaded via the array to prevent double pings
+    if (!projects.some((p) => p.projectId === process.env.APPWRITE_PROJECT_ID)) {
+      projects.push({
+        endpoint: process.env.APPWRITE_ENDPOINT || "https://appwrite.io",
+        projectId: process.env.APPWRITE_PROJECT_ID,
+        apiKey: process.env.APPWRITE_API_KEY,
+        siteUrls: process.env.APPWRITE_SITE_URLS,
+      });
+      console.log("Loaded single project from environment variables");
+    }
+  }
+
+  return projects;
+}
 
 async function pingSite(url: string): Promise<SiteKeepaliveResult> {
   const controller = new AbortController();
